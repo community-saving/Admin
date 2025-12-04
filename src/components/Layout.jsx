@@ -73,6 +73,7 @@ const Layout = () => {
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Payback', href: '/payback', icon: BanknoteArrowDown },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Annual Reports', href: '/annual-reports', icon: CreditCard },
   ];
 
   const isActive = (href) => location.pathname === href;

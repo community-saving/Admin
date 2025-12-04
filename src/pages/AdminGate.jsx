@@ -23,7 +23,7 @@ const AdminGate = ({ onAccessGranted }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   
   // Admin email constant
-  const ADMIN_EMAIL = 'omaryagoub77@gmail.com';
+  const ADMIN_EMAIL = 'Communitysavings4@gmail.com';
 
   // Handle error message timeout with fade animation
   useEffect(() => {

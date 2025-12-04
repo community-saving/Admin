@@ -47,6 +47,9 @@ const NavBar = () => {
               <Link to="/profile" className={getLinkClass('/profile')}>
                 Profile
               </Link>
+              <Link to="/annual-reports" className={getLinkClass('/annual-reports')}>
+                Annual Reports
+              </Link>
       
             </div>
           </div>

@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Loans from './pages/Loans';
 import Users from './pages/Users';
 import Settings from './pages/Setting';
+import AnnualReportsPage from './pages/AnnualReports';
 import Layout from './components/Layout';
 import AdminGate from './pages/AdminGate';
 import { useState } from 'react';
@@ -73,6 +74,7 @@ function App() {
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
         <Route path="chat" element={<ChatPage />} />
+        <Route path="annual-reports" element={<AnnualReportsPage />} />
       </Route>
     </Routes>
   );
