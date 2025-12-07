@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, updateDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { 
   CreditCard, 
@@ -20,6 +20,7 @@ const CashOut = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [processing, setProcessing] = useState({});
+  const [receiptFiles, setReceiptFiles] = useState({});
 
   // 🟢 Listen to USERS collection in real-time
   useEffect(() => {
@@ -116,6 +117,100 @@ const CashOut = () => {
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
     return timestamp.toString();
+  };
+
+  // 🔁 Handle receipt file selection
+  const handleReceiptFileChange = (loanId, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setReceiptFiles(prev => ({ ...prev, [loanId]: file }));
+    }
+  };
+
+  // ☁️ Upload to Cloudinary
+  const uploadToCloudinary = async (file) => {
+    const CLOUD_NAME = "dlrxomdfh";
+    const UPLOAD_PRESET = "Shop-preset";
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", UPLOAD_PRESET);
+    data.append("cloud_name", CLOUD_NAME);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      { method: "POST", body: data }
+    );
+
+    const json = await res.json();
+    return json.secure_url;
+  };
+
+  // ✅ Accept loan with receipt upload
+  const acceptLoanWithReceipt = async (loanId) => {
+    const ok = window.confirm("Are you sure you want to accept this loan?");
+    if (!ok) return;
+
+    if (!receiptFiles[loanId]) {
+      alert("Please upload a receipt image before accepting the loan.");
+      return;
+    }
+
+    setProcessing(prev => ({ ...prev, [loanId]: true }));
+    
+    try {
+      // Upload receipt to Cloudinary
+      const imageUrl = await uploadToCloudinary(receiptFiles[loanId]);
+
+      // Update loan document
+      const loanRef = doc(db, "loans", loanId);
+      await updateDoc(loanRef, {
+        status: "accepted",
+        receiptUrl: imageUrl,
+        acceptedAt: serverTimestamp(),
+      });
+
+      // Clean up the receipt file from state
+      setReceiptFiles(prev => {
+        const updated = { ...prev };
+        delete updated[loanId];
+        return updated;
+      });
+    } catch (err) {
+      console.error("Error accepting loan:", err);
+      setError("Failed to accept loan: " + err.message);
+    } finally {
+      setProcessing(prev => {
+        const copy = { ...prev };
+        delete copy[loanId];
+        return copy;
+      });
+    }
+  };
+
+  // ❌ Deny loan
+  const denyLoan = async (loanId) => {
+    const ok = window.confirm("Are you sure you want to deny this loan?");
+    if (!ok) return;
+
+    setProcessing(prev => ({ ...prev, [loanId]: true }));
+    
+    try {
+      const loanRef = doc(db, "loans", loanId);
+      await updateDoc(loanRef, {
+        status: "denied",
+        deniedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Error denying loan:", err);
+      setError("Failed to deny loan: " + err.message);
+    } finally {
+      setProcessing(prev => {
+        const copy = { ...prev };
+        delete copy[loanId];
+        return copy;
+      });
+    }
   };
 
   // 🧮 Calculations
@@ -323,48 +418,37 @@ const CashOut = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-3">
                         {loan.status === 'pending' ? (
-                          <div className="flex items-center space-x-2">
-                            <button
-                              disabled={!!processing[loan.id]}
-                              onClick={async () => {
-                                const ok = window.confirm('Mark this loan as Paid?');
-                                if (!ok) return;
-                                setProcessing(prev => ({ ...prev, [loan.id]: true }));
-                                try {
-                                  await updateLoanStatus(loan.id, "accepted");
-                                } finally {
-                                  setProcessing(prev => {
-                                    const copy = { ...prev };
-                                    delete copy[loan.id];
-                                    return copy;
-                                  });
-                                }
-                              }}
-                              className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 disabled:opacity-50"
-                            >
-                              {processing[loan.id] ? 'Processing...' : 'Pay'}
-                            </button>
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex flex-col space-y-2">
+                              <label className="text-xs text-gray-500">Upload receipt</label>
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={(e) => handleReceiptFileChange(loan.id, e)}
+                                className="block text-sm border rounded-lg p-1 cursor-pointer bg-gray-50"
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                disabled={!!processing[loan.id] || !receiptFiles[loan.id]}
+                                onClick={() => acceptLoanWithReceipt(loan.id)}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                  !receiptFiles[loan.id] || processing[loan.id]
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "bg-green-600 text-white hover:bg-green-700"
+                                }`}
+                              >
+                                {processing[loan.id] ? 'Processing...' : 'Accept'}
+                              </button>
 
-                            <button
-                              disabled={!!processing[loan.id]}
-                              onClick={async () => {
-                                const ok = window.confirm('Mark this loan as Declined?');
-                                if (!ok) return;
-                                setProcessing(prev => ({ ...prev, [loan.id]: true }));
-                                try {
-                                  await updateLoanStatus(loan.id, "denied");
-                                } finally {
-                                  setProcessing(prev => {
-                                    const copy = { ...prev };
-                                    delete copy[loan.id];
-                                    return copy;
-                                  });
-                                }
-                              }}
-                              className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 disabled:opacity-50"
-                            >
-                              {processing[loan.id] ? 'Processing...' : 'Decline'}
-                            </button>
+                              <button
+                                disabled={!!processing[loan.id]}
+                                onClick={() => denyLoan(loan.id)}
+                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 disabled:opacity-50"
+                              >
+                                {processing[loan.id] ? 'Processing...' : 'Deny'}
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <span className="text-sm text-gray-500">{loan.status === 'accepted' ? 'Paid' : loan.status}</span>
