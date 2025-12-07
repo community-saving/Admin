@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, onSnapshot, orderBy, query, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc } from 'firebase/firestore';
 import { Shield, Calendar } from 'lucide-react';
 
 const AdminUsers = () => {
@@ -9,13 +9,33 @@ const AdminUsers = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    // Remove orderBy to fetch all users, regardless of createdAt field
+    const q = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         try {
           const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-          setUsers(data);
+          
+          // Sort users: those with createdAt first (descending), then those without createdAt
+          const sortedData = data.sort((a, b) => {
+            // If both have createdAt, sort by createdAt descending
+            if (a.createdAt && b.createdAt) {
+              return b.createdAt.toMillis() - a.createdAt.toMillis();
+            }
+            // If only a has createdAt, a comes first
+            if (a.createdAt) {
+              return -1;
+            }
+            // If only b has createdAt, b comes first
+            if (b.createdAt) {
+              return 1;
+            }
+            // If neither has createdAt, maintain relative order
+            return 0;
+          });
+          
+          setUsers(sortedData);
           setLoading(false);
         } catch (err) {
           console.error('Error processing users snapshot:', err);
