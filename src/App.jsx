@@ -15,6 +15,10 @@ import AnnualReportsPage from './pages/AnnualReports';
 import Layout from './components/Layout';
 import AdminGate from './pages/AdminGate';
 import { useState } from 'react';
+// Import the new components
+import Blocked from './pages/Blocked';
+import AdminUsers from './pages/AdminUsers';
+import BlockedUserChecker from './components/BlockedUserChecker';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -59,10 +63,15 @@ function App() {
           <SignUP />
         </RedirectAuthenticatedRoute>
       } />
+      
+      {/* Public route for blocked users */}
+      <Route path="/blocked" element={<Blocked />} />
 
       <Route path="/" element={
         <ProtectedRoute>
-          <Layout />
+          <BlockedUserChecker>
+            <Layout />
+          </BlockedUserChecker>
         </ProtectedRoute>
       }>
         <Route index element={<Dashboard />} />
@@ -72,6 +81,7 @@ function App() {
         <Route path="loans" element={<Loans />} />
         <Route path="payback" element={<Paybackloans />} />
         <Route path="users" element={<Users />} />
+        <Route path="admin-users" element={<AdminUsers />} />
         <Route path="settings" element={<Settings />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path="annual-reports" element={<AnnualReportsPage />} />

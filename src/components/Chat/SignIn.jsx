@@ -18,7 +18,11 @@ export default function SignIn() {
       await login(emailRef.current.value, passwordRef.current.value);
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials and try again.');
+      if (err.message === 'Account is blocked') {
+        navigate('/blocked');
+      } else {
+        setError('Failed to sign in. Please check your credentials and try again.');
+      }
     }
     setLoading(false);
   };
