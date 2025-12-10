@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import exportToPDF from '../exportToPDF';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
   CategoryScale,
@@ -216,7 +217,7 @@ const PaginatedTable = ({ data, columns, itemsPerPage = 10 }) => {
                   disabled={currentPage === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                 >
-                  Previous
+                  {t('previous')}
                 </button>
                 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
@@ -238,7 +239,7 @@ const PaginatedTable = ({ data, columns, itemsPerPage = 10 }) => {
                   disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                 >
-                  Next
+                  {t('next')}
                 </button>
               </nav>
             </div>
@@ -375,6 +376,8 @@ const AnnualReportsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [indexError, setIndexError] = useState({ deposits: null, loans: null });
+  
+  const { t } = useTranslation();
   
   // Pagination state for users table
   const [currentPage, setCurrentPage] = useState(1);
@@ -814,7 +817,7 @@ const AnnualReportsPage = () => {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Annual Reports</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">{t('annual_reports_title')}</h1>
       
       {/* Index Error Notification */}
       {(indexError.deposits || indexError.loans) && (
@@ -827,7 +830,7 @@ const AnnualReportsPage = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                Some queries require Firestore indexes for optimal performance. We're using fallback queries, but you can create the indexes for better performance:
+                {t('index_error_message')}
               </p>
               <div className="mt-2">
                 {indexError.deposits && (
@@ -837,7 +840,7 @@ const AnnualReportsPage = () => {
                     rel="noopener noreferrer"
                     className="text-blue-600 underline hover:text-blue-800 mr-4"
                   >
-                    Create Deposits Index
+{t('create_deposits_index')}
                   </a>
                 )}
                 {indexError.loans && (
@@ -847,7 +850,7 @@ const AnnualReportsPage = () => {
                     rel="noopener noreferrer"
                     className="text-blue-600 underline hover:text-blue-800"
                   >
-                    Create Loans Index
+{t('create_loans_index')}
                   </a>
                 )}
               </div>
@@ -861,7 +864,7 @@ const AnnualReportsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
-              Year
+              {t('select_year')}
             </label>
             <select
               id="year"
@@ -877,7 +880,7 @@ const AnnualReportsPage = () => {
           
           <div>
             <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-1">
-              Month (Optional)
+              {t('select_month')}
             </label>
             <select
               id="month"
@@ -903,13 +906,13 @@ const AnnualReportsPage = () => {
           
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search User
+              {t('search_user')}
             </label>
             <input
               type="text"
               id="search"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Name, email, or phone"
+              placeholder={t('search_user_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -920,7 +923,7 @@ const AnnualReportsPage = () => {
               className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               onClick={fetchUserReports}
             >
-              Apply Filters
+{t('apply_filters')}
             </button>
           </div>
         </div>
@@ -935,7 +938,7 @@ const AnnualReportsPage = () => {
               onChange={(e) => setShowOnlyUnpaid(e.target.checked)}
             />
             <label htmlFor="showUnpaid" className="ml-2 block text-sm text-gray-700">
-              Show only users with unpaid loans
+              {t('show_only_unpaid_loans')}
             </label>
           </div>
           
@@ -943,14 +946,14 @@ const AnnualReportsPage = () => {
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             onClick={handleExportCSV}
           >
-            Export CSV
+{t('export_to_csv')}
           </button>
           
           <button
             className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             onClick={handleExportPDF}
           >
-            Export PDF
+{t('export_to_pdf')}
           </button>
         </div>
       </div>
@@ -958,10 +961,10 @@ const AnnualReportsPage = () => {
       {/* Comparison Section */}
       {memoizedComparisonData && (
         <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Year Comparison</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-4">{t('year_comparison')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-md font-medium text-gray-700 mb-2">Total Deposits</h3>
+              <h3 className="text-md font-medium text-gray-700 mb-2">{t('total_deposits')}</h3>
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-green-600">
                   ${memoizedComparisonData.currentYear.totalDeposits.toFixed(2)}
@@ -978,7 +981,7 @@ const AnnualReportsPage = () => {
             </div>
             
             <div>
-              <h3 className="text-md font-medium text-gray-700 mb-2">Total Loans</h3>
+              <h3 className="text-md font-medium text-gray-700 mb-2">{t('total_loans')}</h3>
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-blue-600">
                   ${memoizedComparisonData.currentYear.totalLoans.toFixed(2)}
@@ -1000,7 +1003,7 @@ const AnnualReportsPage = () => {
       {/* Chart Section */}
       {memoizedChartData && (
         <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Deposits vs Loans by Month</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-4">{t('deposits_vs_loans_by_month')}</h2>
           <div className="h-64">
             <Line
               data={memoizedChartData}
@@ -1024,12 +1027,12 @@ const AnnualReportsPage = () => {
       {/* Users Summary Table with Pagination */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-800">Users Summary</h2>
+          <h2 className="text-lg font-medium text-gray-800">{t('users_summary')}</h2>
         </div>
         
         {loading ? (
           <div className="px-6 py-4 text-center">
-            <p className="text-gray-500">Loading reports...</p>
+            <p className="text-gray-500">{t('loading_reports')}</p>
           </div>
         ) : error ? (
           <div className="px-6 py-4 text-center">
@@ -1037,7 +1040,7 @@ const AnnualReportsPage = () => {
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="px-6 py-4 text-center">
-            <p className="text-gray-500">No users found</p>
+            <p className="text-gray-500">{t('no_users_found')}</p>
           </div>
         ) : (
           <div>
@@ -1046,22 +1049,22 @@ const AnnualReportsPage = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
+                      {t('user')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Deposits
+                      {t('total_deposits_user')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Loans
+                      {t('total_loans_user')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Paid Loans
+                      {t('paid_loans')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Unpaid Loans
+                      {t('unpaid_loans')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                      {t('actions')}
                     </th>
                   </tr>
                 </thead>
@@ -1079,10 +1082,10 @@ const AnnualReportsPage = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {report.user.name || 'Unknown User'}
+                              {report.user.name || t('unknown_user')}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {report.user.email || 'N/A'}
+                              {report.user.email || t('n_a')}
                             </div>
                           </div>
                         </div>
@@ -1110,7 +1113,7 @@ const AnnualReportsPage = () => {
                           onClick={() => handleViewDetails(report.user.id)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                         viewDetails
+{t('view_details')}
                         </button>
                       </td>
                     </tr>
@@ -1128,14 +1131,14 @@ const AnnualReportsPage = () => {
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    Previous
+                    {t('previous')}
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    Next
+                    {t('next')}
                   </button>
                 </div>
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
@@ -1153,7 +1156,7 @@ const AnnualReportsPage = () => {
                         disabled={currentPage === 1}
                         className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                       >
-                        Previous
+  {t('previous')}
                       </button>
                       
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
@@ -1175,7 +1178,7 @@ const AnnualReportsPage = () => {
                         disabled={currentPage === totalPages}
                         className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                       >
-                        Next
+  {t('next')}
                       </button>
                     </nav>
                   </div>

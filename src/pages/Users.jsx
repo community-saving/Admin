@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, onSnapshot, orderBy, query, updateDoc, doc } from 'firebase/firestore';
 import { Search, X, Eye, Download, Check, XCircle, DollarSign, FileText, Clock, CheckCircle, XCircle as XCircleIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // Import useTranslation
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -20,17 +21,20 @@ const Users = () => {
   const [loansError, setLoansError] = useState(null);
   const [processingItems, setProcessingItems] = useState({});
   
+  const { t } = useTranslation(); // Use translation hook
+  
   // Refs for unsubscribing from listeners
   const depositsUnsubRef = useRef(null);
   const loansUnsubRef = useRef(null);
 
   useEffect(() => {
     if (!db) {
-      setError('Firestore instance not available');
+      setError(t('error_firestore_instance'));
       setLoading(false);
       return;
     }
 
+    // Remove orderBy to fetch all users, regardless of createdAt field
     const q = query(collection(db, 'users'));
     const unsub = onSnapshot(
       q,
@@ -60,16 +64,16 @@ const Users = () => {
           setLoading(false);
         } catch (err) {
           console.error('Error processing users snapshot:', err);
-          setError('Failed to process users data');
+          setError(t('error_process_users_data'));
           setLoading(false);
         }
       },
       (err) => {
         console.error('Error fetching users:', err);
         if (err.code === 'permission-denied') {
-          setError('Permission denied. Check Firestore rules.');
+          setError(t('error_permission_denied'));
         } else {
-          setError('Failed to load users: ' + (err.message || 'Unknown error'));
+          setError(t('error_load_users') + (err.message || t('unknown_error')));
         }
         setLoading(false);
       }
@@ -117,13 +121,13 @@ const Users = () => {
           setDepositsLoading(false);
         } catch (err) {
           console.error('Error processing deposits snapshot:', err);
-          setDepositsError('Failed to process deposits data');
+          setDepositsError(t('error_process_deposits_data'));
           setDepositsLoading(false);
         }
       },
       (err) => {
         console.error('Error fetching deposits:', err);
-        setDepositsError('Failed to load deposits: ' + (err.message || 'Unknown error'));
+        setDepositsError(t('error_load_deposits') + (err.message || t('unknown_error')));
         setDepositsLoading(false);
       }
     );
@@ -147,13 +151,13 @@ const Users = () => {
           setLoansLoading(false);
         } catch (err) {
           console.error('Error processing loans snapshot:', err);
-          setLoansError('Failed to process loans data');
+          setLoansError(t('error_process_loans_data'));
           setLoansLoading(false);
         }
       },
       (err) => {
         console.error('Error fetching loans:', err);
-        setLoansError('Failed to load loans: ' + (err.message || 'Unknown error'));
+        setLoansError(t('error_load_loans') + (err.message || t('unknown_error')));
         setLoansLoading(false);
       }
     );
@@ -172,7 +176,7 @@ const Users = () => {
   }, [selectedUser]); // Only depends on selectedUser, not showModal
 
   const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return t('n_a');
     // Firestore Timestamp object
     if (timestamp.seconds) {
       const date = new Date(timestamp.seconds * 1000);
@@ -274,7 +278,7 @@ const Users = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
+          <p className="mt-4 text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );
@@ -288,7 +292,7 @@ const Users = () => {
           onClick={() => window.location.reload()}
           className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
         >
-          Retry
+          {t('retry')}
         </button>
       </div>
     );
@@ -300,7 +304,7 @@ const Users = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6 md:col-span-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Users</p>
+              <p className="text-sm font-medium text-gray-500">{t('total_users')}</p>
               <p className="mt-2 text-3xl font-bold text-gray-900">{users.length}</p>
             </div>
             <div className="p-3 rounded-full bg-green-100">
@@ -313,7 +317,7 @@ const Users = () => {
 
         <div className="bg-white rounded-2xl shadow-sm p-6 md:col-span-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <h2 className="text-lg font-medium text-gray-900">User Records</h2>
+            <h2 className="text-lg font-medium text-gray-900">{t('user_records')}</h2>
             <div className="flex items-center w-full sm:w-64">
               <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -321,7 +325,7 @@ const Users = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder={t('search_users')}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -337,12 +341,12 @@ const Users = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('email')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('phone')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('gender')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('age')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('joined')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -363,22 +367,22 @@ const Users = () => {
                           </div>
                         )}
                         <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{u.fullName || 'No name'}</div>
+                          <div className="text-sm font-medium text-gray-900">{u.fullName || t('no_name')}</div>
                           <div className="text-xs text-gray-500">{u.uid || ''}</div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.email || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.phoneNumber || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{u.gender || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.age || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.email || t('n_a')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.phoneNumber || t('n_a')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{u.gender || t('n_a')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.age || t('n_a')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatTimestamp(u.createdAt)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">No users found.</td>
+                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">{t('no_users_found')}</td>
                 </tr>
               )}
             </tbody>
@@ -391,7 +395,7 @@ const Users = () => {
         <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">User Details: {selectedUser.fullName}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('user_details')}: {selectedUser.fullName}</h2>
               <button
                 onClick={closeModal}
                 className="p-1 rounded-full hover:bg-gray-100 transition-colors"
@@ -412,37 +416,37 @@ const Users = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{selectedUser.fullName || 'No name'}</h3>
-                    <p className="text-sm text-gray-500">ID: {selectedUser.uid || 'N/A'}</p>
+                    <h3 className="text-lg font-medium text-gray-900">{selectedUser.fullName || t('no_name')}</h3>
+                    <p className="text-sm text-gray-500">ID: {selectedUser.uid || t('n_a')}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Email</p>
-                    <p className="text-sm text-gray-900">{selectedUser.email || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('email')}</p>
+                    <p className="text-sm text-gray-900">{selectedUser.email || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Phone Number</p>
-                    <p className="text-sm text-gray-900">{selectedUser.phoneNumber || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('phone_number')}</p>
+                    <p className="text-sm text-gray-900">{selectedUser.phoneNumber || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">MoMo Number</p>
-                    <p className="text-sm text-gray-900">{selectedUser.momoNumber || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('momo_number')}</p>
+                    <p className="text-sm text-gray-900">{selectedUser.momoNumber || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Credit card Number</p>
-                    <p className="text-sm text-gray-900">{selectedUser.creditCardNumber || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('credit_card')}</p>
+                    <p className="text-sm text-gray-900">{selectedUser.creditCardNumber || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Gender</p>
-                    <p className="text-sm text-gray-900 capitalize">{selectedUser.gender || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('gender')}</p>
+                    <p className="text-sm text-gray-900 capitalize">{selectedUser.gender || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Age</p>
-                    <p className="text-sm text-gray-900">{selectedUser.age || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">{t('age')}</p>
+                    <p className="text-sm text-gray-900">{selectedUser.age || t('n_a')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Joined Date</p>
+                    <p className="text-sm font-medium text-gray-500">{t('joined_date')}</p>
                     <p className="text-sm text-gray-900">{formatTimestamp(selectedUser.createdAt)}</p>
                   </div>
                 </div>
@@ -456,27 +460,27 @@ const Users = () => {
                     <div className="p-2 rounded-full bg-green-100 mr-3">
                       <DollarSign className="h-6 w-6 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Deposits Summary</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{t('deposits_summary')}</h3>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Total Amount:</span>
+                      <span className="text-sm text-gray-500">{t('total_amount')}:</span>
                       <span className="text-sm font-medium text-gray-900">${totalDepositsAmount.toFixed(2)}</span>
                     </div>
                     {/* <div className="grid grid-cols-3 gap-2">
                       <div className="text-center p-2 bg-yellow-50 rounded">
                         <Clock className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Pending</p>
+                        <p className="text-xs text-gray-500">{t('pending')}</p>
                         <p className="text-sm font-medium text-gray-900">{depositStatusCounts.pending}</p>
                       </div>
                       <div className="text-center p-2 bg-green-50 rounded">
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Accepted</p>
+                        <p className="text-xs text-gray-500">{t('accepted')}</p>
                         <p className="text-sm font-medium text-gray-900">{depositStatusCounts.accepted}</p>
                       </div>
                       <div className="text-center p-2 bg-red-50 rounded">
                         <XCircleIcon className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Denied</p>
+                        <p className="text-xs text-gray-500">{t('denied')}</p>
                         <p className="text-sm font-medium text-gray-900">{depositStatusCounts.denied}</p>
                       </div>
                     </div> */}
@@ -489,27 +493,27 @@ const Users = () => {
                     <div className="p-2 rounded-full bg-blue-100 mr-3">
                       <FileText className="h-6 w-6 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Loans Summary</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{t('loans_summary')}</h3>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Total Amount:</span>
+                      <span className="text-sm text-gray-500">{t('total_amount')}:</span>
                       <span className="text-sm font-medium text-gray-900">${totalLoansAmount.toFixed(2)}</span>
                     </div>
                     {/* <div className="grid grid-cols-3 gap-2">
                       <div className="text-center p-2 bg-yellow-50 rounded">
                         <Clock className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Pending</p>
+                        <p className="text-xs text-gray-500">{t('pending')}</p>
                         <p className="text-sm font-medium text-gray-900">{loanStatusCounts.pending}</p>
                       </div>
                       <div className="text-center p-2 bg-green-50 rounded">
                         <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Accepted</p>
+                        <p className="text-xs text-gray-500">{t('accepted')}</p>
                         <p className="text-sm font-medium text-gray-900">{loanStatusCounts.accepted}</p>
                       </div>
                       <div className="text-center p-2 bg-red-50 rounded">
                         <XCircleIcon className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Denied</p>
+                        <p className="text-xs text-gray-500">{t('denied')}</p>
                         <p className="text-sm font-medium text-gray-900">{loanStatusCounts.denied}</p>
                       </div>
                     </div> */}
@@ -519,7 +523,7 @@ const Users = () => {
 
               {/* Deposits Section */}
               <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Deposits</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('deposits')}</h3>
                 {depositsLoading ? (
                   <div className="flex justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -533,12 +537,12 @@ const Users = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proof</th>
-                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('amount')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('date')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('message')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('proof')}</th>
+                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th> */}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -547,31 +551,31 @@ const Users = () => {
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${deposit.amount || '0'}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(deposit.status)}`}>
-                                {deposit.status || 'Unknown'}
+                                {deposit.status || t('unknown')}
                               </span>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatTimestamp(deposit.timestamp)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={deposit.message}>{deposit.message || 'N/A'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={deposit.message}>{deposit.message || t('n_a')}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                               {deposit.proofImage ? (
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() => handleViewImage(deposit.proofImage)}
                                     className="text-indigo-600 hover:text-indigo-900"
-                                    title="View"
+                                    title={t('view')}
                                   >
                                     <Eye className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDownloadImage(deposit.proofImage, `deposit-proof-${deposit.id}.jpg`)}
                                     className="text-indigo-600 hover:text-indigo-900"
-                                    title="Download"
+                                    title={t('download')}
                                   >
                                     <Download className="h-5 w-5" />
                                   </button>
                                 </div>
                               ) : (
-                                'N/A'
+                                t('n_a')
                               )}
                             </td>
                             {/* <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
@@ -581,7 +585,7 @@ const Users = () => {
                                     onClick={() => handleApproveDeny('deposits', deposit.id, 'accepted')}
                                     disabled={processingItems[deposit.id]}
                                     className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                                    title="Approve"
+                                    title={t('approve')}
                                   >
                                     {processingItems[deposit.id] ? (
                                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
@@ -593,7 +597,7 @@ const Users = () => {
                                     onClick={() => handleApproveDeny('deposits', deposit.id, 'denied')}
                                     disabled={processingItems[deposit.id]}
                                     className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                    title="Deny"
+                                    title={t('deny')}
                                   >
                                     {processingItems[deposit.id] ? (
                                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
@@ -610,13 +614,13 @@ const Users = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-sm text-gray-500">No deposits found.</div>
+                  <div className="text-center py-4 text-sm text-gray-500">{t('no_deposits_found')}</div>
                 )}
               </div>
 
               {/* Loans Section */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Loans</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('loans')}</h3>
                 {loansLoading ? (
                   <div className="flex justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -630,12 +634,12 @@ const Users = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
-                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('amount')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('date')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('reason')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('approved_by')}</th>
+                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th> */}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -644,12 +648,12 @@ const Users = () => {
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${loan.amount || '0'}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(loan.status)}`}>
-                                {loan.status || 'Unknown'}
+                                {loan.status || t('unknown')}
                               </span>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatTimestamp(loan.timestamp)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={loan.reason}>{loan.reason || 'N/A'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{loan.approvedBy || 'N/A'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title={loan.reason}>{loan.reason || t('n_a')}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{loan.approvedBy || t('n_a')}</td>
                             {/* <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                               {loan.status === 'pending' && (
                                 <div className="flex space-x-2">
@@ -657,7 +661,7 @@ const Users = () => {
                                     onClick={() => handleApproveDeny('loans', loan.id, 'accepted')}
                                     disabled={processingItems[loan.id]}
                                     className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                                    title="Approve"
+                                    title={t('approve')}
                                   >
                                     {processingItems[loan.id] ? (
                                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
@@ -669,7 +673,7 @@ const Users = () => {
                                     onClick={() => handleApproveDeny('loans', loan.id, 'denied')}
                                     disabled={processingItems[loan.id]}
                                     className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                    title="Deny"
+                                    title={t('deny')}
                                   >
                                     {processingItems[loan.id] ? (
                                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
@@ -686,7 +690,7 @@ const Users = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-sm text-gray-500">No loans found.</div>
+                  <div className="text-center py-4 text-sm text-gray-500">{t('no_loans_found')}</div>
                 )}
               </div>
             </div>

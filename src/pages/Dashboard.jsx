@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
   const [totalDeposits, setTotalDeposits] = useState(0);
@@ -38,6 +39,8 @@ const Dashboard = () => {
     width: window.innerWidth,
     height: window.innerHeight
   });
+  
+  const { t } = useTranslation();
 
   // Track screen size for responsive charts
   useEffect(() => {
@@ -267,7 +270,7 @@ const Dashboard = () => {
           setRecentActivity(prev => {
             const newActivity = loansData.slice(0, 3).map(cashout => ({
               id: cashout.id,
-              type: 'cashout',
+              type: 'loan',
               userId: cashout.userId,
               amount: cashout.amount,
               status: cashout.status,
@@ -312,8 +315,8 @@ const Dashboard = () => {
   const stats = [
     {
       id: 1,
-      name: 'Total Deposits',
-      value: depositsError ? 'N/A' : formatCurrency(totalDeposits),
+      name: t('total_deposits'),
+      value: depositsError ? t('n_a') : formatCurrency(totalDeposits),
       change: '+12.5%',
       changeType: 'positive',
       icon: DollarSign,
@@ -321,8 +324,8 @@ const Dashboard = () => {
     },
     {
       id: 2,
-      name: 'Total loans',
-      value: loansError ? 'N/A' : formatCurrency(totalloans),
+      name: t('total_loans'),
+      value: loansError ? t('n_a') : formatCurrency(totalloans),
       change: '+8.2%',
       changeType: 'positive',
       icon: CreditCard,
@@ -330,8 +333,8 @@ const Dashboard = () => {
     },
     {
       id: 3,
-      name: 'Pending loans',
-      value: loansError ? 'N/A' : pendingloans,
+      name: t('pending_loans'),
+      value: loansError ? t('n_a') : pendingloans,
       change: '+3.1%',
       changeType: 'negative',
       icon: Activity,
@@ -339,8 +342,8 @@ const Dashboard = () => {
     },
     {
       id: 4,
-      name: 'Total Users',
-      value: usersError ? 'N/A' : totalUsers,
+      name: t('total_users'),
+      value: usersError ? t('n_a') : totalUsers,
       change: '+5.4%',
       changeType: 'positive',
       icon: Users,
@@ -387,7 +390,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );
@@ -417,7 +420,7 @@ const Dashboard = () => {
               <span className={`ml-1 text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-500' : 'text-red-500'}`}>
                 {stat.change}
               </span>
-              <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500">from last month</span>
+              <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500">{t('from_last_month')}</span>
             </div>
           </div>
         ))}
@@ -427,7 +430,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Bar chart */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Live Transactions</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('live_transactions')}</h3>
           <div className="h-64 sm:h-80 overflow-x-auto">
             <ResponsiveContainer 
               width="100%" 
@@ -472,7 +475,7 @@ const Dashboard = () => {
 
         {/* Line chart */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Transaction Trend</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('transaction_trend')}</h3>
           <div className="h-64 sm:h-80 overflow-x-auto">
             <ResponsiveContainer 
               width="100%" 
@@ -522,9 +525,9 @@ const Dashboard = () => {
       {/* Recent activity */}
       <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900">Recent Activity</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900">{t('recent_activity')}</h3>
           <button className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-            View all
+            {t('view_all')}
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -532,19 +535,19 @@ const Dashboard = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  {t('type')}
                 </th>
                 <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User ID
+                  {t('user_id')}
                 </th>
                 <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
+                  {t('amount')}
                 </th>
                 <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  {t('status')}
                 </th>
                 <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {t('date')}
                 </th>
               </tr>
             </thead>
@@ -563,7 +566,7 @@ const Dashboard = () => {
                             <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                           </div>
                         )}
-                        <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-gray-900 capitalize">{activity.type}</span>
+                        <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-gray-900 capitalize">{t(activity.type)}</span>
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
@@ -575,7 +578,7 @@ const Dashboard = () => {
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {activity.type === 'deposit' ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          Completed
+                          {t('completed')}
                         </span>
                       ) : (
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -583,7 +586,7 @@ const Dashboard = () => {
                           activity.status === 'Accepted' ? 'bg-green-100 text-green-800' : 
                           'bg-red-100 text-red-800'
                         }`}>
-                          {activity.status || 'Pending'}
+                          {activity.status ? t(activity.status.toLowerCase()) : t('pending')}
                         </span>
                       )}
                     </td>
@@ -595,7 +598,7 @@ const Dashboard = () => {
               ) : (
                 <tr>
                   <td colSpan="5" className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm text-gray-500">
-                    No recent activity
+                    {t('no_recent_activity')}
                   </td>
                 </tr>
               )}
