@@ -17,6 +17,8 @@ import {
   BanknoteArrowDown,
   LogOut
 } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher'; // Import LanguageSwitcher
+import { useTranslation } from 'react-i18next'; // Import useTranslation
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +26,7 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { t } = useTranslation(); // Use translation hook
 
   const handleLogout = async () => {
     try {
@@ -66,15 +69,15 @@ const Layout = () => {
   }, [location.pathname]);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Deposits', href: '/deposits', icon: PiggyBank },
-    { name: 'loans', href: '/loans', icon: HandCoins },
-    { name: 'Chat', href: '/chat', icon: MessageCircleMore },
-    { name: 'Users', href: '/users', icon: Users },
-    { name: 'Payback', href: '/payback', icon: BanknoteArrowDown },
-    { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'Block users', href: '/admin-users', icon: Settings },
-    { name: 'Annual Reports', href: '/annual-reports', icon: CreditCard },
+    { name: t('dashboard') , href: '/dashboard', icon: LayoutDashboard },
+    { name: t('deposits') , href: '/deposits', icon: PiggyBank },
+    { name: t('loans'), href: '/loans', icon: HandCoins },
+    { name: t('chat'), href: '/chat', icon: MessageCircleMore },
+    { name: t('users'), href: '/users', icon: Users },
+    { name: t('payback'), href: '/payback', icon: BanknoteArrowDown },
+    { name: t('settings'), href: '/settings', icon: Settings },
+    { name: t('block_users'), href: '/admin-users', icon: Settings },
+    { name: t('annual_reports'), href: '/annual-reports', icon: CreditCard },
   ];
 
   const isActive = (href) => location.pathname === href;
@@ -93,7 +96,7 @@ const Layout = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <h1 className="text-xl font-bold text-gray-900">MoneyBox</h1>
+                <h1 className="text-xl font-bold text-gray-900">{t('moneybox')}</h1>
               </div>
             </div>
             <button 
@@ -147,7 +150,7 @@ const Layout = () => {
               className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               <LogOut className="mr-3 h-5 w-5" />
-              Logout
+              {t('logout')}
             </button>
           </div>
         </div>
@@ -175,16 +178,15 @@ const Layout = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-             
-              
-             
+              {/* Language Switcher */}
+              <LanguageSwitcher />
               
               <button
                 onClick={handleLogout}
                 className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
               >
                 <LogOut className="mr-2 h-5 w-5" />
-                Logout
+                {t('logout')}
               </button>
             </div>
           </div>

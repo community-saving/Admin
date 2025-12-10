@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebaseConfig";
 import { collection, getDocs, updateDoc, doc, setDoc, query, orderBy, limit } from "firebase/firestore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next'; // Import useTranslation
 
 const AdminInterestSettings = () => {
   const [interest, setInterest] = useState("10.00"); // Default to 10% instead of 0.10
@@ -12,6 +13,8 @@ const AdminInterestSettings = () => {
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [interestDocId, setInterestDocId] = useState(null);
+  
+  const { t } = useTranslation(); // Use translation hook
 
   useEffect(() => {
     const fetchInterest = async () => {
@@ -34,174 +37,202 @@ const AdminInterestSettings = () => {
         } else {
           setInterest("10.00"); // Default to 10% instead of 0.10
         }
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching interest:", error);
-        setMessage("Failed to load interest rate");
+        console.error("Error fetching interest rate:", error);
+        setMessage(t('error_fetch_interest_rate'));
         setMessageType("error");
-        setTimeout(() => setMessage(null), 3000);
-      } finally {
         setLoading(false);
       }
     };
+
     fetchInterest();
   }, []);
 
   const handleSave = async () => {
-    // Validate input for percentage range (1-100)
-    if (isNaN(interest) || interest < 1 || interest > 100) {
-      setMessage("Please enter a valid interest rate between 1% and 100%");
+    if (!interest || isNaN(interest)) {
+      setMessage(t('error_invalid_interest_rate'));
       setMessageType("error");
-      setTimeout(() => setMessage(null), 3000);
       return;
     }
 
     setSaving(true);
     try {
-      const timestamp = new Date();
+      const interestValue = parseFloat(interest);
+      if (interestValue < 0 || interestValue > 100) {
+        throw new Error(t('error_interest_rate_range'));
+      }
+
+      const interestData = {
+        interest: interestValue,
+        timestamp: new Date()
+      };
+
       if (interestDocId) {
         // Update existing document
-        const interestDoc = doc(db, "interest", interestDocId);
-        // Convert percentage to decimal for storage
-        await updateDoc(interestDoc, { 
-          interest: Number(interest) ,
-          timestamp: timestamp
-        });
+        await updateDoc(doc(db, "interest", interestDocId), interestData);
       } else {
         // Create new document
-        await setDoc(doc(db, "interest", "globalRate"), { 
-          interest: Number(interest) ,
-          timestamp: timestamp
-        });
-        setInterestDocId("globalRate");
+        const newDocRef = doc(collection(db, "interest"));
+        await setDoc(newDocRef, interestData);
+        setInterestDocId(newDocRef.id);
       }
-      
-      setMessage("Interest rate updated successfully!");
+
+      setMessage(t('success_interest_rate_saved'));
       setMessageType("success");
       
-      // Update history data with percentage value
-      setHistoryData(prev => [
-        ...prev.slice(-9), // Keep only last 10 records
-        { 
-          date: timestamp.toLocaleDateString(), 
-          rate: Number(interest) 
-        }
-      ]);
+      // Refresh history
+      const q = query(collection(db, "interest"), orderBy("timestamp", "desc"), limit(10));
+      const snap = await getDocs(q);
+      const history = snap.docs.map(doc => ({
+        date: new Date(doc.data().timestamp?.toDate() || Date.now()).toLocaleDateString(),
+        rate: parseFloat(doc.data().interest) 
+      })).reverse();
+      setHistoryData(history);
     } catch (error) {
-      console.error("Error updating interest:", error);
-      setMessage("Failed to update interest rate");
+      console.error("Error saving interest rate:", error);
+      setMessage(t('error_save_interest_rate') + error.message);
       setMessageType("error");
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage(null), 3000);
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen px-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-10 w-full max-w-md text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-300">Loading interest rate...</p>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t('loading')}</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="flex justify-center items-center min-h-screen px-4 bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 md:p-10 w-full max-w-md">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 text-center">
-          Interest Rate Settings
-        </h2>
-        
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            Current Interest Rate (%)
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              step="0.01"
-              min="1"
-              max="100"
-              value={interest}
-              onChange={(e) => setInterest(e.target.value)}
-              className="border border-gray-300 dark:border-gray-700 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 outline-none pr-12"
-              disabled={saving}
-              placeholder="Enter interest rate (1–100)"
-            />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-              %
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">{t('interest_rate_settings')}</h1>
+        <p className="mt-2 text-gray-600">{t('interest_rate_settings_description')}</p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('current_interest_rate')}</h2>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('interest_rate_percentage')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    id="interestRate"
+                    value={interest}
+                    onChange={(e) => setInterest(e.target.value)}
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder={t('enter_interest_rate')}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500">%</span>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">{t('interest_rate_help_text')}</p>
+              </div>
+              
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+                  saving 
+                    ? 'bg-indigo-400 cursor-not-allowed' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                }`}
+              >
+                {saving ? t('saving') : t('save_changes')}
+              </button>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Enter as a percentage (e.g., 5 for 5%)</p>
-        </div>
-        
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 w-full disabled:opacity-50 flex items-center justify-center text-sm sm:text-base"
-        >
-          {saving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-              Saving...
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </button>
-        
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline"
-          >
-            {showHistory ? "Hide" : "Show"} Rate History
-          </button>
-        </div>
-        
-        {showHistory && historyData.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-              Interest Rate History
-            </h3>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                  <Tooltip 
-                    formatter={(value) => `${value.toFixed(2)}%`}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-                      border: '1px solid #ccc',
-                      borderRadius: '4px'
-                    }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="rate" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6', r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('preview')}</h2>
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-6 text-white">
+              <div className="text-center">
+                <p className="text-lg mb-2">{t('current_rate')}</p>
+                <p className="text-4xl font-bold">{interest}%</p>
+                <p className="mt-2 text-indigo-100">{t('annual_percentage_rate')}</p>
+              </div>
             </div>
+          </div>
+        </div>
+
+        {message && (
+          <div className={`mt-4 p-4 rounded-lg ${
+            messageType === "success" 
+              ? "bg-green-50 text-green-800" 
+              : "bg-red-50 text-red-800"
+          }`}>
+            {message}
           </div>
         )}
       </div>
-      
-      {message && (
-        <div
-          className={`fixed top-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white font-semibold shadow-md transition-all duration-300 ${
-            messageType === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          {message}
+
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">{t('interest_rate_history')}</h2>
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-indigo-600 hover:text-indigo-800 font-medium"
+          >
+            {showHistory ? t('hide_history') : t('show_history')}
+          </button>
         </div>
-      )}
+
+        {showHistory && (
+          <div className="mt-6">
+            {historyData.length > 0 ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={historyData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`${value}%`, t('rate')]}
+                      labelFormatter={(label) => `${t('date')}: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="rate" 
+                      stroke="#4f46e5" 
+                      activeDot={{ r: 8 }} 
+                      strokeWidth={2}
+                      name={t('interest_rate')}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">{t('no_history_data')}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
