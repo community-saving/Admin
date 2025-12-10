@@ -12,10 +12,11 @@ import {
   Banknote
 } from "lucide-react";
 
-const CashOut = () => {
+const Loans = () => {
   const [loans, setLoans] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [usersLoaded, setUsersLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -32,10 +33,14 @@ const CashOut = () => {
           ...doc.data(),
         }));
         setUsers(userData);
+        setUsersLoaded(true);
+        // Console log sample for debugging
+        console.log(`Loaded ${userData.length} users`);
       },
       (err) => {
         console.error("Error loading users:", err);
         setError("Failed to load users: " + err.message);
+        setUsersLoaded(true); // Still set to true to avoid infinite loading
       }
     );
     return () => unsubUsers();
@@ -43,42 +48,73 @@ const CashOut = () => {
 
   // 🟣 Listen to LOANS collection and merge with USERS
   useEffect(() => {
-    const loanQuery = query(collection(db, "loans"), orderBy("timestamp", "desc"));
-    const unsubLoans = onSnapshot(
-      loanQuery,
-      (snapshot) => {
-        try {
-          const loanData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          // Merge each loan with corresponding user's name
-          const mergedData = loanData.map(loan => {
-           const user = users.find((u) => u.uid === loan.userId);
-            return {
-              ...loan,
-              userName: user ? user.fullName || "Unnamed User" : "Unknown User",
-            };
-          });
-
-          setLoans(mergedData);
-          setLoading(false);
-        } catch (err) {
-          console.error("Error merging loan data:", err);
-          setError("Error processing loan data: " + err.message);
-          setLoading(false);
-        }
-      },
-      (err) => {
-        console.error("Firestore error:", err);
-        setError("Failed to load loans: " + err.message);
-        setLoading(false);
-      }
+    // Only proceed if users have been loaded (or failed to load)
+    if (!usersLoaded) return;
+    
+    const loanQuery = query(
+      collection(db, "loans"),
+      orderBy("timestamp", "desc")
     );
 
+    const unsubLoans = onSnapshot(loanQuery, (snapshot) => {
+      const loanData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Debug logging to see what we're working with
+      console.log(`Processing ${loanData.length} loans with ${users.length} users`);
+
+      // Merge loans with corresponding user fullName and email
+      const mergedData = loanData.map(loan => {
+        // Match loan.userId to users.id (VERY IMPORTANT)
+        // Normalize IDs for comparison
+        const normalizeId = (id) => {
+          if (typeof id === 'string') {
+            return id.trim();
+          }
+          if (id !== null && id !== undefined) {
+            return String(id).trim();
+          }
+          return '';
+        };
+        
+        const loanUserId = normalizeId(loan.userId);
+        
+        // Find user with robust ID matching
+        let user = users.find(u => {
+          const userId = normalizeId(u.id);
+          return userId === loanUserId && userId !== '';
+        });
+        
+        // Debug logging for mismatches - only log if there are mismatches
+        if (!user && loanUserId) {
+          // Log only the first few mismatches to avoid console spam
+          if (loanData.filter(l => !users.find(u => normalizeId(u.id) === normalizeId(l.userId))).length < 5) {
+            console.log(`No user found for loan ID: ${loan.id} with normalized userId: '${loanUserId}'`);
+            console.log("Available normalized user IDs:", users.map(u => `('${normalizeId(u.id)}')`).slice(0, 10));
+          }
+        }
+
+        return {
+          ...loan,
+          userFullName: user ? (user.fullName || user.name || "Unknown name") : (loan.userId ? `Unknown User (${loan.userId})` : "Unknown User (No ID Provided)"),
+          userEmail: user ? (user.email || "No Email Found") : "No Email Found",
+        };
+      });
+
+      console.log(`Merged ${mergedData.length} loans with user data`);
+
+      setLoans(mergedData);
+      setLoading(false);
+    }, (err) => {
+      console.error("Error loading loans:", err);
+      setError("Failed to load loans: " + err.message);
+      setLoading(false);
+    });
+
     return () => unsubLoans();
-  }, [users]);
+  }, [users, usersLoaded]);
 
   // 🔵 Utility functions
   const getStatusClass = (status) => {
@@ -221,17 +257,17 @@ const CashOut = () => {
   const totalPaidAmount = loans.filter(l => l.status === 'accepted').reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
   const totalDeclinedAmount = loans.filter(l => l.status === 'denied').reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
 
-  // 🔍 Filters
+  // 🔍 Filters - Fixed to use userFullName instead of userName
   const filteredLoans = loans.filter(l => {
     const matchesSearch = 
-      (l.userName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (l.userFullName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (l.userId?.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (l.message?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'All' || l.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  // 🕓 Loading and error states
+  // 🔓 Loading and error states
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -377,8 +413,11 @@ const CashOut = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User Name
+                </th> */}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
@@ -398,9 +437,15 @@ const CashOut = () => {
               {filteredLoans.length > 0 ? (
                 filteredLoans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {loan.userFullName}
+                      </div>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">{loan.userName}</div>
-                      <div className="text-xs text-gray-500 italic">ID: {loan.userId}</div>
+                      <div className="text-sm text-gray-500">
+                        {loan.userEmail}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
@@ -454,11 +499,11 @@ const CashOut = () => {
                           <span className="text-sm text-gray-500">{loan.status === 'accepted' ? 'Paid' : loan.status}</span>
                         )}
 
-                        {loan.imageUrl && (
+                        {loan.receiptUrl && (
                           <button
-                            onClick={() => window.open(loan.imageUrl, '_blank')}
+                            onClick={() => window.open(loan.receiptUrl, '_blank')}
                             className="text-indigo-600 hover:text-indigo-900 flex items-center"
-                            title="View proof"
+                            title="View receipt"
                           >
                             <Wallet className="h-4 w-4" />
                           </button>
@@ -469,7 +514,7 @@ const CashOut = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
                     No loans found.
                   </td>
                 </tr>
@@ -482,4 +527,4 @@ const CashOut = () => {
   );
 };
 
-export default CashOut;
+export default Loans;

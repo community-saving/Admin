@@ -1110,7 +1110,7 @@ const AnnualReportsPage = () => {
                           onClick={() => handleViewDetails(report.user.id)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          {t('viewDetails')}
+                         viewDetails
                         </button>
                       </td>
                     </tr>

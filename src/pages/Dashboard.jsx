@@ -70,14 +70,33 @@ const Dashboard = () => {
       return;
     }
   
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'users'));
     const unsub = onSnapshot(
       q,
       (snapshot) => {
         try {
           const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-          setUsers(data);
-          setTotalUsers(data.length);
+          
+          // Sort users: those with createdAt first (descending), then those without createdAt
+          const sortedData = data.sort((a, b) => {
+            // If both have createdAt, sort by createdAt descending
+            if (a.createdAt && b.createdAt) {
+              return b.createdAt.toMillis() - a.createdAt.toMillis();
+            }
+            // If only a has createdAt, a comes first
+            if (a.createdAt) {
+              return -1;
+            }
+            // If only b has createdAt, b comes first
+            if (b.createdAt) {
+              return 1;
+            }
+            // If neither has createdAt, maintain relative order
+            return 0;
+          });
+          
+          setUsers(sortedData);
+          setTotalUsers(sortedData.length);
           setLoading(false);
           setUsersError(false);
         } catch (err) {
